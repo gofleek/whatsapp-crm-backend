@@ -1,5 +1,6 @@
 const { Chat, Message } = require('../models');
 const { getIO } = require('../socket/socketHandler');
+const { sendWhatsAppMessage } = require('../utils/whatsappClient');
 
 // GET /messages/:chat_id
 exports.getMessages = async (req, res, next) => {
@@ -52,10 +53,13 @@ exports.sendMessage = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Cannot reply to a closed chat. Reopen it first.' });
     }
 
-    // ---- Simulated WhatsApp Business API call ----
-    // await whatsappApiClient.sendMessage(chat.phone_number, message);
-    console.log(`[WhatsApp SIMULATED SEND] -> ${chat.phone_number}: ${message}`);
-    // ------------------------------------------------
+    // ---- WhatsApp Cloud API call (real if configured, simulated otherwise) ----
+    try {
+      await sendWhatsAppMessage(chat.phone_number, message.trim());
+    } catch (waErr) {
+      return res.status(502).json({ success: false, message: `WhatsApp API error: ${waErr.message}` });
+    }
+    // -----------------------------------------------------------------------
 
     const newMessage = await Message.create({
       chat_id: chat.id,

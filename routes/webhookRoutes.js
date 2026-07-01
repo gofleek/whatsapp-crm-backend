@@ -2,18 +2,16 @@ const express = require('express');
 const router = express.Router();
 const webhookController = require('../controllers/webhookController');
 
-// NOTE: Real WhatsApp Business API providers (Meta Cloud API, Twilio, etc.)
-// call this endpoint directly - it is intentionally NOT protected by the
-// JWT `authenticate` middleware. If you want basic protection, set
-// WEBHOOK_SECRET in .env and check it here, e.g.:
-//
-// router.post('/whatsapp', (req, res, next) => {
-//   if (req.headers['x-webhook-secret'] !== process.env.WEBHOOK_SECRET) {
-//     return res.status(401).json({ success: false, message: 'Unauthorized' });
-//   }
-//   next();
-// }, webhookController.receiveMessage);
+// GET is Meta's one-time verification handshake when you save the webhook
+// URL in the Meta App Dashboard (Configuration -> Webhooks). Must match
+// WHATSAPP_VERIFY_TOKEN in your env vars to whatever you type into that
+// dashboard field.
+router.get('/whatsapp', webhookController.verifyWebhook);
 
+// POST is where actual incoming messages arrive (and also where the admin
+// dashboard's "Simulate Webhook" button posts test messages).
+// Intentionally NOT protected by the JWT `authenticate` middleware, since
+// Meta calls this directly and has no way to send a JWT.
 router.post('/whatsapp', webhookController.receiveMessage);
 
 module.exports = router;
